@@ -1,0 +1,121 @@
+{
+  "AWSEBDockerrunVersion": "2",
+
+  "volumes": [
+    {
+      "name": "configs",
+      "host": {
+        "sourcePath": "/var/app/current"
+      }
+    }
+  ],
+
+  "containerDefinitions": [
+    {
+      "name": "gateway",
+      "image": "nginx:1.17",
+      "essential": true,
+
+      "memory": 128,
+
+      "portMappings": [
+        {
+          "hostPort": 50051,
+          "containerPort": 50051
+        }
+      ],
+
+      "links": [
+        "stalkforecaster",
+        "stalkreporter"
+      ],
+
+      "mountPoints": [
+        {
+          "sourceVolume": "configs",
+          "containerPath": "/etc/nginx",
+          "readOnly": true
+        }
+      ]
+    },
+
+    {
+      "name": "restgateway",
+      "image": "bpeake89/stalkgateway:latest",
+      "essential": true,
+
+      "memory": 128,
+
+      "portMappings": [
+        {
+          "hostPort": 80,
+          "containerPort": 80
+        }
+      ],
+
+      "links": [
+        "gateway"
+      ],
+
+      "environment": [
+        {
+          "name": "REST_HOST",
+          "value": "0.0.0.0"
+        },
+        {
+          "name": "REST_PORT",
+          "value": "80"
+        },
+        {
+          "name": "GRPC_HOST",
+          "value": "gateway"
+        },
+        {
+          "name": "GRPC_PORT",
+          "value": "50051"
+        }
+      ]
+    },
+
+    {
+      "name": "stalkforecaster",
+      "image": "bpeake89/stalkforecaster:latest",
+      "essential": true,
+
+      "memory": 128,
+
+      "environment": [
+        {
+          "name": "GRPC_HOST",
+          "value": "0.0.0.0"
+        },
+        {
+          "name": "GRPC_PORT",
+          "value": "50051"
+        }
+      ]
+
+    },
+
+    {
+      "name": "stalkreporter",
+      "image": "bpeake89/stalkreporter:latest",
+      "essential": true,
+
+      "memory": 256,
+      "cpu": 256,
+
+      "environment": [
+        {
+          "name": "GRPC_HOST",
+          "value": "0.0.0.0"
+        },
+        {
+          "name": "GRPC_PORT",
+          "value": "50051"
+        }
+      ]
+
+    }
+  ]
+}

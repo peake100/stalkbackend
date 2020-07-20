@@ -1,0 +1,52 @@
+version: '3.5'
+
+services:
+
+  gateway:
+    # nginx is reponsible for routing all incoming http requests to the correct service.
+    image: nginx:1.17
+    restart: unless-stopped
+    networks:
+      - stalk-backend
+    ports:
+      - 80:80
+      - 50051:50051
+    volumes:
+      # Expose the nginx configuration in the root directory to the service.
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+
+  rest-gateway:
+    image: bpeake89/stalkgateway
+    restart: unless-stopped
+    environment:
+      REST_HOST: 0.0.0.0
+      REST_PORT: 80
+      GRPC_HOST: gateway
+      GRPC_PORT: 50051
+    networks:
+      - stalk-backend
+
+  stalkforecaster:
+    image: bpeake89/stalkforecaster
+    restart: unless-stopped
+    environment:
+      GRPC_HOST: 0.0.0.0
+      GRPC_PORT: 50051
+    networks:
+      - stalk-backend
+
+  stalkreporter:
+    image: bpeake89/stalkreporter:dev
+    restart: unless-stopped
+    environment:
+      GRPC_HOST: 0.0.0.0
+      GRPC_PORT: 50051
+    networks:
+      - stalk-backend
+
+networks:
+  stalk-backend:
+    # This network is for micro-services that need to be reachable by the gateway
+    # (nginx)
+    external: false
+    name: stalk-backend
